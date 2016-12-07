@@ -2,48 +2,19 @@
 
 namespace Room11\Jeeves\Chat\Message;
 
+use Room11\Jeeves\Chat\Event\MessageEvent;
+
 class Factory
 {
-    public function build(array $data): Message
+    private function isCommandMessage(MessageEvent $event)
     {
-        $message = reset($data);
-
-        if (isset($message['e'])) {
-            return $this->buildEventMessage(reset($message['e']));
-        }
-
-        return new Heartbeat($message);
+        return strpos($event->getMessageContent()->textContent, '!!') === 0;
     }
 
-    private function buildEventMessage(array $message): Message
+    public function build(MessageEvent $event): Message
     {
-        switch ($message['event_type']) {
-            case 1:
-                return new NewMessage($message);
-
-            case 2:
-                return new EditMessage($message);
-
-            case 3:
-                return new UserEnter($message);
-
-            case 4:
-                return new UserLeave($message);
-
-            case 5:
-                return new RoomEdit($message);
-
-            case 6:
-                return new StarMessage($message);
-
-            case 8:
-                return new MentionMessage($message);
-
-            case 10:
-                return new DeleteMessage($message);
-
-            default:
-                return new Unknown($message);
-        }
+        return $this->isCommandMessage($event)
+            ? new Command($event, $event->getRoom())
+            : new Message($event, $event->getRoom());
     }
 }
